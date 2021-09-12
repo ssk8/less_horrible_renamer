@@ -10,7 +10,7 @@ kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
 
 
 def get_new_name(old_name):
-    current_name = old_name.replace("[SubsPlease] ", '')
+    current_name = re.sub(r"^\[.+\] ", '', old_name)
     season_search = re.search("S[0-9]{1,2} ", current_name)
     if season_search:
         current_season = current_name[season_search.start()+1]
