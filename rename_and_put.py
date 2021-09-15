@@ -5,6 +5,7 @@ from os import environ
 import paramiko
 import re
 
+downloads_path = Path("/home/pi/Downloads/")
 kodi_address = "192.168.1.110"
 kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
 
@@ -39,29 +40,32 @@ def get_finished_downloads(path, unfinished):
     downloads_files = [f for f in path.iterdir() if f.is_file()]
     return [f for f in downloads_files if f.name not in unfinished]
 
-def main():
+
+def get_sftp_client(address):
     ssh_client=paramiko.SSHClient()
     ssh_client.load_host_keys("/home/pi/.ssh/known_hosts")
     ssh_client.connect(hostname=kodi_address, username='root')
-    sftp_client = ssh_client.open_sftp()
+    return ssh_client.open_sftp()
 
-    tv_dirs = get_remote(sftp_client, kodi_hd_path / "TV Shows")
 
-    unfinished = unfinished_torrents()
-
-    downloads_path = Path("/home/pi/Downloads/")
-
-    finished_downloads = get_finished_downloads(downloads_path, unfinished)
+def main():
+    kodi_sftp = get_sftp_client(kodi_address)
+    tv_dirs = get_remote(kodi_sftp, kodi_hd_path / "TV Shows")
+    finished_downloads = get_finished_downloads(downloads_path, unfinished_torrents())
     for f in finished_downloads:
-        new_name, dir_name = get_new_name(f.name)
+        try:
+            new_name, dir_name = get_new_name(f.name)
+        except AttributeError:
+            print(f"{f.name} didn't fint a known pattern")
+            continue
         new_file_path = kodi_hd_path / 'TV Shows' / dir_name
         print(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\" which did{(dir_name not in tv_dirs)*' not'} exist")
         if dir_name not in tv_dirs:
-            sftp_client.mkdir(str(new_file_path))
-        current_files = get_remote(sftp_client, new_file_path, dirs=False)
+            kodi_sftp.mkdir(str(new_file_path))
+        current_files = get_remote(kodi_sftp, new_file_path, dirs=False)
         if new_name not in current_files:
             print(f"moving {f} to {new_file_path / new_name}")
-            sftp_client.put(str(f), str(new_file_path / new_name))
+            kodi_sftp.put(str(f), str(new_file_path / new_name))
         else:
             print(f"{new_name} is already there!!!")
 
