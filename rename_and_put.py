@@ -11,7 +11,7 @@ kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
 
 
 def get_new_name(old_name):
-    current_name = re.sub(r"^\[.+\] ", '', old_name)
+    current_name = re.sub(r"^\[.+\] ", '', old_name.replace('_', ' '))
     season_search = re.search("S[0-9]{1,2} ", current_name)
     if season_search:
         current_season = current_name[season_search.start()+1]
@@ -48,26 +48,32 @@ def get_sftp_client(address):
     return ssh_client.open_sftp()
 
 
-def main():
-    kodi_sftp = get_sftp_client(kodi_address)
-    tv_dirs = get_remote(kodi_sftp, kodi_hd_path / "TV Shows")
-    finished_downloads = get_finished_downloads(downloads_path, unfinished_torrents())
-    for f in finished_downloads:
+def put_files(files, sftp_client):
+    tv_dirs = get_remote(sftp_client, kodi_hd_path / "TV Shows")
+    for f in files:
         try:
             new_name, dir_name = get_new_name(f.name)
         except AttributeError:
-            print(f"{f.name} didn't fint a known pattern")
+            print(f"{f.name} didn't fit a known pattern")
             continue
         new_file_path = kodi_hd_path / 'TV Shows' / dir_name
         print(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\" which did{(dir_name not in tv_dirs)*' not'} exist")
         if dir_name not in tv_dirs:
-            kodi_sftp.mkdir(str(new_file_path))
-        current_files = get_remote(kodi_sftp, new_file_path, dirs=False)
+            sftp_client.mkdir(str(new_file_path))
+            tv_dirs.append(dir_name)
+        current_files = get_remote(sftp_client, new_file_path, dirs=False)
         if new_name not in current_files:
             print(f"moving {f} to {new_file_path / new_name}")
-            kodi_sftp.put(str(f), str(new_file_path / new_name))
+            sftp_client.put(str(f), str(new_file_path / new_name))
         else:
             print(f"{new_name} is already there!!!")
+
+
+def main():
+    kodi_sftp = get_sftp_client(kodi_address)
+    finished_downloads = get_finished_downloads(downloads_path, unfinished_torrents())
+    put_files(finished_downloads, kodi_sftp)
+
 
 if __name__ == "__main__":
     main()
