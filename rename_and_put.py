@@ -14,16 +14,17 @@ def get_new_name(old_name):
     season_search = re.search("S[0-9]{1,2} ", current_name)
     if season_search:
         current_season = current_name[season_search.start()+1]
-        current_name = current_name.replace(' S{}'.format(current_season), '')
+        current_name = current_name.replace(f' S{current_season}', '')
     else:
         current_season = 1
     name_index = re.search(r" - [0-9]{1,2} [\[, (]", current_name).start()
     current_dir_name = current_name[0:name_index]
-    current_name = '{} - S0{}E{}'.format(current_name[:name_index], current_season, current_name[name_index + 3:])
+    current_name = f'{current_name[:name_index]} - S0{current_season}E{current_name[name_index + 3:]}'
     return current_name, current_dir_name
 
 
 def get_remote(sftp_client, path, dirs=True):
+    """returns a list of remote directories at 'path' on 'sftp_client' if 'dirs' or list of files if not 'dirs'"""
     mode = 16877*dirs or 33188
     files = list()
     return [f.filename for f in sftp_client.listdir_attr(str(path)) if f.st_mode==mode]
@@ -62,7 +63,7 @@ def main():
             print(f"moving {f} to {new_file_path / new_name}")
             sftp_client.put(str(f), str(new_file_path / new_name))
         else:
-            print(f"{f.name} is already there!!!")
+            print(f"{new_name} is already there!!!")
 
 if __name__ == "__main__":
     main()
