@@ -11,16 +11,21 @@ kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
 
 
 def get_new_name(old_name):
-    current_name = re.sub(r"^\[.{0,18}\] ", '', old_name.replace('_', ' '))
-    season_search = re.search("S[0-9]{1,2} ", current_name)
-    if season_search:
-        current_season = current_name[season_search.start()+1]
-        current_name = current_name.replace(f' S{current_season}', '')
+    current_name = re.sub(r"^\[.{0,18}\] ", '', old_name)
+    formated_index = re.search(r"[ ._-]{0,3}[Ss]\d{1,2}[ ]{0,1}[Ee]\d{1,2}", current_name)
+    if formated_index:
+        current_dir_name = current_name[0:formated_index.start()]
+        current_dir_name = re.sub(r"[._]", " ", current_dir_name)
     else:
-        current_season = 1
-    name_index = re.search(r" - [0-9]{1,2} [\[, (]", current_name).start()
-    current_dir_name = current_name[0:name_index]
-    current_name = f'{current_name[:name_index]} - S0{current_season}E{current_name[name_index + 3:]}'
+        season_search = re.search("S[0-9]{1,2} ", current_name)
+        if season_search:
+            current_season = current_name[season_search.start()+1]
+            current_name = current_name.replace(f' S{current_season}', '')
+        else:
+            current_season = 1
+        name_index = re.search(r" - [0-9]{1,2} [\[, (]", current_name).start()
+        current_dir_name = current_name[0:name_index]
+        current_name = f'{current_name[:name_index]} - S0{current_season}E{current_name[name_index + 3:]}'
     return current_name, current_dir_name
 
 
