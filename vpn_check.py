@@ -14,15 +14,22 @@ def get_current_ip():
 def kill_process(proc):
         from os import kill
         from signal import SIGKILL
-        from subprocess import check_output
-        qbpid = int(check_output(["pidof", proc]))
-        kill(qbpid, SIGKILL)
+        from subprocess import check_output, CalledProcessError
+        try:
+            kill(int(check_output(["pidof", proc])), SIGKILL)
+            print("killed the offender")
+        except CalledProcessError:
+            print("no worries")
+
+
+def is_safe():
+    home_address = get_home_address()
+    current_ip = get_current_ip()
+    return home_address != current_ip
 
 
 def main():
-    home_address = get_home_address()
-    current_ip = get_current_ip()
-    if home_address==current_ip:
+    if not is_safe():
         kill_process("qbittorrent-nox")
 
 
