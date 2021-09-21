@@ -1,4 +1,4 @@
-# less_horrible_renamer
+# just a little help from my helpers
 Updated file renamer and (now) mover!
 
 Keys will need to be in place for kodi machine:
