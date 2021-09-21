@@ -10,3 +10,5 @@ and add web controll creds to .bashrc on the t-box like this:
 export QBIT_NAME='user'
 
 export QBIT_PW='password'
+
+export HOME_DOMAIN_NAME="dymanic DNS name"
