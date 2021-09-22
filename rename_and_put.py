@@ -4,13 +4,14 @@ import qbittorrent
 from os import environ
 import paramiko
 import re
+from typing import List
 
 downloads_path = Path("/home/pi/Downloads/")
 kodi_address = "192.168.1.110"
 kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
 
 
-def get_new_name(old_name):
+def get_new_name(old_name: str) -> (str, str):
     current_name = re.sub(r"^\[.{0,18}\] ", '', old_name)
     formated_index = re.search(r"[ ._-]{0,3}[Ss]\d{1,2}[ ]{0,1}[Ee]\d{1,2}", current_name)
     if formated_index:
@@ -29,31 +30,31 @@ def get_new_name(old_name):
     return current_name, current_dir_name
 
 
-def get_remote(sftp_client, path, dirs=True):
+def get_remote(sftp_client: paramiko.sftp_client.SFTPClient, path, dirs=True) -> List[str]:
     """returns a list of remote directories at 'path' on 'sftp_client' if 'dirs' or list of files if not 'dirs'"""
     mode = 16877*dirs or 33188
-    files = list()
     return [f.filename for f in sftp_client.listdir_attr(str(path)) if f.st_mode==mode]
 
 
-def unfinished_torrents():
+def unfinished_torrents() -> List[str]:
     qb = qbittorrent.Client('http://localhost:8080/')
     qb.login(environ['QBIT_NAME'], environ['QBIT_PW'])
     return [t['name'] for t in qb.torrents() if t['amount_left']]
 
-def get_finished_downloads(path, unfinished):
+
+def get_finished_downloads(path: Path, unfinished: List[str]) -> List[Path]:
     downloads_files = [f for f in path.iterdir() if f.is_file()]
     return [f for f in downloads_files if f.name not in unfinished]
 
 
-def get_sftp_client(address):
+def get_sftp_client(address: str) -> paramiko.sftp_client.SFTPClient:
     ssh_client=paramiko.SSHClient()
     ssh_client.load_host_keys("/home/pi/.ssh/known_hosts")
-    ssh_client.connect(hostname=kodi_address, username='root')
+    ssh_client.connect(hostname=address, username='root')
     return ssh_client.open_sftp()
 
 
-def put_files(files, sftp_client):
+def put_files(files, sftp_client: paramiko.sftp_client.SFTPClient) -> None:
     tv_dirs = get_remote(sftp_client, kodi_hd_path / "TV Shows")
     for f in files:
         try:
