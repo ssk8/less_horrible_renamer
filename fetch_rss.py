@@ -7,14 +7,10 @@ import qbittorrent
 from os import environ
 
 
-torrent_box_address = 'http://192.168.1.106:8080/'
-
-
 def add_torrents(magnets_list):
-    qb = qbittorrent.Client(torrent_box_address)
+    qb = qbittorrent.Client('http://localhost:8080/')
     qb.login(environ['QBIT_NAME'], environ['QBIT_PW'])
     [qb.download_from_link(ct) for ct in magnets_list]
-    print(f'sent {len(magnets_list)} torrents to {torrent_box_address}')
 
 
 def get_json(json_file):
@@ -25,7 +21,7 @@ def get_json(json_file):
 
 def get_feed(rss_address):
   url = requests.get(rss_address)
-  soup = BeautifulSoup(url.content, "html.parser")
+  soup = BeautifulSoup(url.content, "xml")
   items = soup.find_all('item')
   return {i.title.text:i.link.text for i in items}
 
@@ -38,7 +34,7 @@ def main():
     shows_feed = get_feed(site)
     for new_show, magnet in shows_feed.items():
       for want_show in want:
-        if all(s in new_show for s in want_show):
+        if all(s in new_show for s in want_show) and ("(Batch)" not in new_show): 
           if new_show not in have_list:
             to_get[new_show] = magnet
 
