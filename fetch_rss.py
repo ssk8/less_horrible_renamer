@@ -7,6 +7,7 @@ import qbittorrent
 from os import environ
 import vpn_check
 import sys
+from pathlib import Path
 
 
 def preconditions():
@@ -38,28 +39,29 @@ def get_feed(rss_address):
   return {i.title.text:i.link.text for i in items}
 
 
-def get_list_to_get(wants, have_list):
+def get_list_to_get(wants, already_got):
   to_get = dict()
   for site, want in wants.items():
     shows_feed = get_feed(site)
     for new_show, magnet in shows_feed.items():
       for want_show in want:
         if all(s in new_show for s in want_show) and ("(Batch)" not in new_show): 
-          if new_show not in have_list:
+          if new_show not in already_got:
             to_get[new_show] = magnet
   return to_get
 
 
 def main():
   preconditions()
-  wants = get_json('want.json')
-  have_list = get_json('have.json')
+  base_path = Path(__file__).parent.absolute()
+  wants = get_json(base_path/'want.json')
+  have_list = get_json(base_path/'have.json')
   to_get = get_list_to_get(wants, have_list)
 
   if to_get:
     have_list.extend(to_get.keys())        
     add_torrents(to_get.values())
-    with open("have.json", 'w') as f:
+    with open(base_path/"have.json", 'w') as f:
       json.dump(have_list, f)
 
 
