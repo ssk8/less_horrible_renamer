@@ -1,0 +1,10 @@
+{
+"https://somewhere.to/rss":[
+["fancy show", "720p"],
+["even fancier show","1080p"]
+],
+"https://somewherelse.to/rss":[
+    ["silly show", "720p"],
+    ["even sillier show","1080p"]
+]
+}
