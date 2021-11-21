@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-from bs4 import BeautifulSoup
-import requests
+import feedparser
 import json
 import qbittorrent
 from os import environ
@@ -33,10 +32,9 @@ def get_json(json_file):
 
 
 def get_feed(rss_address):
-  url = requests.get(rss_address)
-  soup = BeautifulSoup(url.content, "xml")
-  items = soup.find_all('item')
-  return {i.title.text:i.link.text for i in items}
+  feed = feedparser.parse(rss_address)
+  entries = feed['entries'] 
+  return {entry['title']:entry['links'][0]['href'] for entry in entries}
 
 
 def get_list_to_get(wants, already_got):
