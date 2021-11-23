@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
-from bs4 import BeautifulSoup
-import requests
+import feedparser
 import json
 import qbittorrent
 from os import environ
@@ -33,10 +32,9 @@ def get_json(json_file):
 
 
 def get_feed(rss_address):
-  url = requests.get(rss_address)
-  soup = BeautifulSoup(url.content, "xml")
-  items = soup.find_all('item')
-  return {i.title.text:i.link.text for i in items}
+  feed = feedparser.parse(rss_address)
+  entries = feed['entries'] 
+  return {entry['title']:entry['links'][0]['href'] for entry in entries}
 
 
 def get_list_to_get(wants, already_got):
@@ -54,16 +52,19 @@ def get_list_to_get(wants, already_got):
 def main():
   preconditions()
   base_path = Path(__file__).parent.absolute()
-  wants = get_json(base_path/'want.json')
-  have_list = get_json(base_path/'have.json')
+  have_file = base_path/'have.json'
+  wants_file = base_path/'want.json'
+  wants = get_json(wants_file)
+  have_list = get_json(have_file) if have_file.exists() else []
   to_get = get_list_to_get(wants, have_list)
 
   if to_get:
     have_list.extend(to_get.keys())        
     add_torrents(to_get.values())
-    with open(base_path/"have.json", 'w') as f:
+    with open(have_file, 'w') as f:
       json.dump(have_list, f)
 
 
 if __name__ == "__main__":
   main()
+  
