@@ -7,6 +7,26 @@ from os import environ
 import vpn_check
 import sys
 from pathlib import Path
+import logging
+
+base_path = Path(__file__).parent.absolute()
+have_file = base_path / 'have.json'
+wants_file = base_path / 'want.json'
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+
+file_handler = logging.FileHandler(base_path / 'logs' / 'fetch.log')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+stream_handler.setFormatter(formatter)
+
+log.addHandler(file_handler)
+log.addHandler(stream_handler)
 
 
 def preconditions():
@@ -14,9 +34,11 @@ def preconditions():
   if pid:
       if not vpn_check.is_safe():
           vpn_check.kill_process(pid)
+          log.warning("VPN is down, stopping here!")
           sys.exit("vpn not running")
   else:
-      sys.exit("qb not running")    
+      log.warning("qb down")
+      sys.exit("qb not running")  
       
 
 def add_torrents(magnets_list):
@@ -26,8 +48,13 @@ def add_torrents(magnets_list):
 
 
 def get_json(json_file):
-  with open(json_file, 'r') as f:
-    data = json.load(f)
+  try:
+    with open(json_file, 'r') as f:
+      data = json.load(f)
+  except FileNotFoundError:
+    log.exception(f"{json_file} is missing!")
+  except json.decoder.JSONDecodeError:
+    log.exception(f"problem parsing json file {json_file}")
   return data
 
 
@@ -50,15 +77,15 @@ def get_list_to_get(wants, already_got):
 
 
 def main():
+  log.info('checking in')
   preconditions()
-  base_path = Path(__file__).parent.absolute()
-  have_file = base_path/'have.json'
-  wants_file = base_path/'want.json'
   wants = get_json(wants_file)
   have_list = get_json(have_file) if have_file.exists() else []
   to_get = get_list_to_get(wants, have_list)
 
   if to_get:
+    for k in to_get.keys():
+      log.info(f"fetching {k}")
     have_list.extend(to_get.keys())        
     add_torrents(to_get.values())
     with open(have_file, 'w') as f:
