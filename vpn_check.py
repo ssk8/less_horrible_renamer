@@ -1,12 +1,16 @@
 #!/usr/bin/python3
 
 import socket, urllib.request, logging
-from os import environ, path
+from os import environ, path, mkdir
+
+base_path = path.dirname(path.abspath(__file__))
+if not path.exists(base_path+"/logs"):
+    mkdir(base_path+"/logs")
 
 log = logging.getLogger(__name__)
 formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
 log.setLevel(logging.INFO)
-file_handler = logging.FileHandler(f'{path.dirname(path.abspath(__file__))}/logs/vpn_check.log')
+file_handler = logging.FileHandler(f'{base_path}/logs/vpn_check.log')
 file_handler.setLevel(logging.WARNING)
 file_handler.setFormatter(formatter)
 
