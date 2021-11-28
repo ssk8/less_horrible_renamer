@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from itertools import chain
 from pathlib import Path
 import qbittorrentapi
 from os import environ
@@ -11,7 +12,7 @@ import logging
 downloads_path = Path("/home/pi/Downloads/")
 kodi_address = "192.168.1.110"
 kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
-file_types = [".mkv", ".avi", ".ass", ".srt", ".mp4"]
+file_types = ["*.mkv", "*.avi", "*.ass", "*.srt", "*.mp4"]
 
 base_path = Path(__file__).parent.absolute()
 have_file = base_path / 'have.json'
@@ -66,11 +67,8 @@ def unfinished_torrents() -> List[str]:
 
 
 def get_finished_downloads(path: Path, unfinished: List[str]) -> List[Path]:
-    finished_files = []
     unfinished_files = [path / uf for uf in unfinished]
-    for f in path.rglob("*"):
-        if f.is_file() and (f.suffix in file_types) and (f not in unfinished_files):
-            finished_files.append(f)
+    finished_files = [f for f in chain(*[path.rglob(ft) for ft in file_types]) if f not in unfinished_files]
     return finished_files
 
 
