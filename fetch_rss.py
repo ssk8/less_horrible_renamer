@@ -2,7 +2,7 @@
 
 import feedparser
 import json
-import qbittorrent
+import qbittorrentapi
 from os import environ
 import vpn_check
 import sys
@@ -41,10 +41,10 @@ def preconditions():
       sys.exit("qb not running")  
       
 
-def add_torrents(magnets_list):
-    qb = qbittorrent.Client('http://localhost:8080/')
-    qb.login(environ['QBIT_NAME'], environ['QBIT_PW'])
-    [qb.download_from_link(ct) for ct in magnets_list]
+def add_torrents(magnets):
+    qb = qbittorrentapi.Client(host='localhost', port=8080, username=environ['QBIT_NAME'], password=environ['QBIT_PW'])
+    qb.auth_log_in() 
+    qb.torrents_add(urls=magnets)
 
 
 def get_json(json_file):

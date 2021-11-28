@@ -1,3 +1,3 @@
 feedparser
-python-qbittorrent
+qbittorrent-api
 paramiko
