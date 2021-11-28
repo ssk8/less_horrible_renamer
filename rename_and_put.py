@@ -88,16 +88,13 @@ def put_files(files, sftp_client: paramiko.sftp_client.SFTPClient) -> None:
             log.info(f"{f.name} didn't fit a known pattern")
             continue
         new_file_path = kodi_hd_path / 'TV Shows' / dir_name
-        log.info(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\" new={bool(dir_name not in tv_dirs)}")
         if dir_name not in tv_dirs:
             sftp_client.mkdir(str(new_file_path))
             tv_dirs.append(dir_name)
         current_files = get_remote(sftp_client, new_file_path, dirs=False)
         if new_name not in current_files:
-            log.info(f"moving {f} to {new_file_path / new_name}")
+            log.info(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\"")
             sftp_client.put(str(f), str(new_file_path / new_name))
-        else:
-            log.info(f"{new_name} already exists")
 
 
 def main():
