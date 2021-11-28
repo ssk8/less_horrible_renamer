@@ -1,14 +1,36 @@
 #!/usr/bin/python3
+
 from pathlib import Path
-import qbittorrent
+import qbittorrentapi
 from os import environ
 import paramiko
 import re
 from typing import List
+import logging
 
 downloads_path = Path("/home/pi/Downloads/")
 kodi_address = "192.168.1.110"
 kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
+file_types = [".mkv", ".avi", ".ass", ".srt", ".mp4"]
+
+base_path = Path(__file__).parent.absolute()
+have_file = base_path / 'have.json'
+wants_file = base_path / 'want.json'
+
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+
+file_handler = logging.FileHandler(base_path / 'logs' / 'rename.log')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.DEBUG)
+stream_handler.setFormatter(formatter)
+
+log.addHandler(file_handler)
+log.addHandler(stream_handler)
 
 
 def get_new_name(old_name: str) -> (str, str):
@@ -37,14 +59,19 @@ def get_remote(sftp_client: paramiko.sftp_client.SFTPClient, path, dirs=True) ->
 
 
 def unfinished_torrents() -> List[str]:
-    qb = qbittorrent.Client('http://localhost:8080/')
-    qb.login(environ['QBIT_NAME'], environ['QBIT_PW'])
-    return [t['name'] for t in qb.torrents() if t['amount_left']]
+    qb = qbittorrentapi.Client(host='localhost', port=8080, username=environ['QBIT_NAME'], password=environ['QBIT_PW'])
+    qb.auth_log_in()
+    hashes = [t.hash for t in qb.torrents_info()]
+    return [t.name for h in hashes for t in qb.torrents_files(h) if t.progress!=1]
 
 
 def get_finished_downloads(path: Path, unfinished: List[str]) -> List[Path]:
-    downloads_files = [f for f in path.iterdir() if f.is_file()]
-    return [f for f in downloads_files if f.name not in unfinished]
+    finished_files = []
+    unfinished_files = [path / uf for uf in unfinished]
+    for f in path.rglob("*"):
+        if f.is_file() and (f.suffix in file_types) and (f not in unfinished_files):
+            finished_files.append(f)
+    return finished_files
 
 
 def get_sftp_client(address: str) -> paramiko.sftp_client.SFTPClient:
@@ -60,19 +87,19 @@ def put_files(files, sftp_client: paramiko.sftp_client.SFTPClient) -> None:
         try:
             new_name, dir_name = get_new_name(f.name)
         except AttributeError:
-            print(f"{f.name} didn't fit a known pattern")
+            log.info(f"{f.name} didn't fit a known pattern")
             continue
         new_file_path = kodi_hd_path / 'TV Shows' / dir_name
-        print(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\" which did{(dir_name not in tv_dirs)*' not'} exist")
+        log.info(f"\"{f.name}\" to \"{new_name}\" in kodi directory \"{dir_name}\" new={bool(dir_name not in tv_dirs)}")
         if dir_name not in tv_dirs:
             sftp_client.mkdir(str(new_file_path))
             tv_dirs.append(dir_name)
         current_files = get_remote(sftp_client, new_file_path, dirs=False)
         if new_name not in current_files:
-            print(f"moving {f} to {new_file_path / new_name}")
+            log.info(f"moving {f} to {new_file_path / new_name}")
             sftp_client.put(str(f), str(new_file_path / new_name))
         else:
-            print(f"{new_name} is already there!!!")
+            log.info(f"{new_name} already exists")
 
 
 def main():
