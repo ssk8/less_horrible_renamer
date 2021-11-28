@@ -33,8 +33,8 @@ def get_pid(proc):
     from subprocess import check_output, CalledProcessError
     try:
         return int(check_output(["pidof", proc]))
-    except CalledProcessError:
-        return None
+    except CalledProcessError as e:
+        log.error(f"qb running?  {e}")
 
 
 def kill_process(pid):
