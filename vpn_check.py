@@ -4,13 +4,13 @@ import socket, urllib.request, logging
 from os import environ, path, mkdir
 
 base_path = path.dirname(path.abspath(__file__))
-if not path.exists(base_path+"/logs"):
-    mkdir(base_path+"/logs")
+if not path.exists(base_path + "/logs"):
+    mkdir(base_path + "/logs")
 
 log = logging.getLogger(__name__)
-formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+formatter = logging.Formatter("%(asctime)s:%(name)s:%(message)s")
 log.setLevel(logging.INFO)
-file_handler = logging.FileHandler(f'{base_path}/logs/vpn_check.log')
+file_handler = logging.FileHandler(f"{base_path}/logs/vpn_check.log")
 file_handler.setLevel(logging.WARNING)
 file_handler.setFormatter(formatter)
 
@@ -20,6 +20,7 @@ stream_handler.setFormatter(formatter)
 
 log.addHandler(file_handler)
 log.addHandler(stream_handler)
+
 
 def get_home_address():
     return socket.gethostbyname(environ["HOME_DOMAIN_NAME"])
@@ -31,6 +32,7 @@ def get_current_ip():
 
 def get_pid(proc):
     from subprocess import check_output, CalledProcessError
+
     try:
         return int(check_output(["pidof", proc]))
     except CalledProcessError as e:
@@ -40,6 +42,7 @@ def get_pid(proc):
 def kill_process(pid):
     from os import kill
     from signal import SIGKILL
+
     kill(pid, SIGKILL)
     log.warning("VPN was down!")
 

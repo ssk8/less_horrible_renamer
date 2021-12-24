@@ -2,6 +2,7 @@
 from vpn_check import is_safe
 from subprocess import Popen
 
+
 def main():
     if is_safe():
         print("all clear")
