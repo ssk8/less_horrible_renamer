@@ -9,12 +9,13 @@ import re
 from typing import List
 import logging
 
-downloads_path = Path("/home/pi/Downloads/")
 kodi_address = "192.168.1.110"
-kodi_hd_path = Path("/media/sda1-usb-WDC_WD20_EZRZ-00")
+kodi_hd_path = Path("/media/sda1-ata-WDC_WD20EZRZ-00Z")
+base_path = Path(__file__).parent.absolute()
+home_path = base_path/".."
+downloads_path = home_path/"Downloads"
 file_types = ["*.mkv", "*.avi", "*.ass", "*.srt", "*.mp4"]
 
-base_path = Path(__file__).parent.absolute()
 have_file = base_path / "have.json"
 wants_file = base_path / "want.json"
 
@@ -60,9 +61,12 @@ def get_remote(
 ) -> List[str]:
     """returns a list of remote directories at 'path' on 'sftp_client' if 'dirs' or list of files if not 'dirs'"""
     mode = 16877 * dirs or 33188
-    return [
-        f.filename for f in sftp_client.listdir_attr(str(path)) if f.st_mode == mode
-    ]
+    try:
+        remote = sftp_client.listdir_attr(str(path))
+    except IOError:
+        log.critical("\n\n ****** IOError -> check kodi_hd_path (line 13) *******\n")
+        raise
+    return [f.filename for f in remote if f.st_mode == mode]
 
 
 def unfinished_torrents() -> List[str]:
@@ -89,7 +93,7 @@ def get_finished_downloads(path: Path, unfinished: List[str]) -> List[Path]:
 
 def get_sftp_client(address: str) -> paramiko.sftp_client.SFTPClient:
     ssh_client = paramiko.SSHClient()
-    ssh_client.load_host_keys("/home/pi/.ssh/known_hosts")
+    ssh_client.load_host_keys(home_path/".ssh/known_hosts")
     ssh_client.connect(hostname=address, username="root")
     return ssh_client.open_sftp()
 
